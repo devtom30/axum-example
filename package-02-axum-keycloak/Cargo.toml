@@ -4,3 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+axum = "0.7.7"
+axum-keycloak-auth = {version = "0.6.0"}
+openssl = { version = "0.10", features = ["vendored"] }
+tracing = "0.1"
+tokio = "1.0"
+time = "0.3"

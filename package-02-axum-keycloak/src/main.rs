@@ -24,7 +24,7 @@ pub fn protected_router(instance: KeycloakAuthInstance) -> Router {
 // You may have multiple routers that you want to see protected by a `KeycloakAuthLayer`.
 // You can safely attach new `KeycloakAuthLayer`s to different routers, but consider using only a single `KeycloakAuthInstance` for all of these layers.
 // Remember: The `KeycloakAuthInstance` manages the keys used to decode incoming JWTs and dynamically fetches them from your Keycloak server.
-// Having multiple instances simoultaniously would incease pressure on your Keycloak instance on service startup and unnecesssarily store duplicated data.
+// Having multiple instances simultaneously would increase pressure on your Keycloak instance on service startup and unnecessarily store duplicated data.
 // The `KeycloakAuthLayer` therefore really takes an `Arc<KeycloakAuthInstance>` in its `instance` method!
 // Presence of the `Into` trait in the `instance` methods argument let us hide that fact in the previous example.
 
@@ -88,10 +88,10 @@ async fn main() {
     );
     let router = public_router().merge(protected_router(keycloak_auth_instance));
 
-    // let addr_and_port = String::from("0.0.0.0:8080");
-    // let socket_addr: std::net::SocketAddr = addr_and_port.parse().unwrap();
-    // println!("Listening on: {}", addr_and_port);
+    let addr_and_port = String::from("0.0.0.0:8080");
+    let socket_addr: std::net::SocketAddr = addr_and_port.parse().unwrap();
+    println!("Listening on: {}", addr_and_port);
 
-    // let tcp_listener = tokio::net::TcpListener::bind(socket_addr).await.unwrap();
-    // axum::serve(tcp_listener, router.into_make_service()).await.unwrap();
+    let tcp_listener = tokio::net::TcpListener::bind(socket_addr).await.unwrap();
+    axum::serve(tcp_listener, router.into_make_service()).await.unwrap();
 }
