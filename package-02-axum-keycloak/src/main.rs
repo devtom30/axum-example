@@ -16,7 +16,7 @@ pub fn protected_router(instance: KeycloakAuthInstance) -> Router {
                 .passthrough_mode(PassthroughMode::Block)
                 .persist_raw_claims(false)
                 .expected_audiences(vec![String::from("account")])
-                .required_roles(vec![String::from("administrator")])
+                //.required_roles(vec![String::from("administrator")])
                 .build(),
         )
 }
@@ -58,7 +58,7 @@ pub async fn health() -> impl IntoResponse {
 }
 
 pub async fn protected(Extension(token): Extension<KeycloakToken<String>>) -> Response {
-    expect_role!(&token, "administrator");
+    // expect_role!(&token, "administrator");
 
     tracing::info!("Token payload is {token:#?}");
 
@@ -82,13 +82,13 @@ pub async fn protected(Extension(token): Extension<KeycloakToken<String>>) -> Re
 async fn main() {
     let keycloak_auth_instance = KeycloakAuthInstance::new(
         KeycloakConfig::builder()
-            .server(Url::parse("https://localhost:8443/").unwrap())
-            .realm(String::from("MyRealm"))
+            .server(Url::parse("http://localhost:8080/").unwrap())
+            .realm(String::from("axum-realm"))
             .build(),
     );
     let router = public_router().merge(protected_router(keycloak_auth_instance));
 
-    let addr_and_port = String::from("0.0.0.0:8080");
+    let addr_and_port = String::from("0.0.0.0:3000");
     let socket_addr: std::net::SocketAddr = addr_and_port.parse().unwrap();
     println!("Listening on: {}", addr_and_port);
 
