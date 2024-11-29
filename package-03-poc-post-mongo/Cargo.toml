@@ -1,0 +1,14 @@
+[package]
+name = "package-03-poc-post-mongo"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = { version = "0.7.7" }
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1.0", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dependencies.mongodb]
+version = "3.1.0"

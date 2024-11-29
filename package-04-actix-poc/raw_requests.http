@@ -1,0 +1,11 @@
+###
+POST http://localhost:8080/echo
+Content-Type: application/json
+Accept: */*
+
+{
+"username": "ohhhhh"
+}
+
+###
+GET http://localhost:8080

@@ -1,0 +1,59 @@
+ab -p data.json -T application/json -n 1000000 -c 10 http://localhost:3000/users
+This is ApacheBench, Version 2.3 <$Revision: 1843412 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking localhost (be patient)
+Completed 100000 requests
+Completed 200000 requests
+Completed 300000 requests
+Completed 400000 requests
+Completed 500000 requests
+Completed 600000 requests
+Completed 700000 requests
+Completed 800000 requests
+Completed 900000 requests
+Completed 1000000 requests
+Finished 1000000 requests
+
+
+Server Software:        
+Server Hostname:        localhost
+Server Port:            3000
+
+Document Path:          /users
+Document Length:        31 bytes
+
+Concurrency Level:      10
+Time taken for tests:   73.047 seconds
+Complete requests:      1000000
+Failed requests:        0
+Total transferred:      144000000 bytes
+Total body sent:        167000000
+HTML transferred:       31000000 bytes
+Requests per second:    13689.77 [#/sec] (mean)
+Time per request:       0.730 [ms] (mean)
+Time per request:       0.073 [ms] (mean, across all concurrent requests)
+Transfer rate:          1925.12 [Kbytes/sec] received
+                        2232.61 kb/s sent
+                        4157.73 kb/s total
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.1      0       7
+Processing:     0    1   0.2      0      16
+Waiting:        0    0   0.2      0      16
+Total:          0    1   0.2      1      16
+ERROR: The median and mean for the processing time are more than twice the standard
+       deviation apart. These results are NOT reliable.
+
+Percentage of the requests served within a certain time (ms)
+  50%      1
+  66%      1
+  75%      1
+  80%      1
+  90%      1
+  95%      1
+  98%      1
+  99%      1
+ 100%     16 (longest request)
