@@ -7,11 +7,22 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use walkdir::WalkDir;
+use app_properties::AppProperties;
+use axum::extract::State;
 
 #[tokio::main]
 async fn main() {
     // initialize tracing
     tracing_subscriber::fmt::init();
+
+    let properties: AppProperties = AppProperties::new();
+    let path = properties.get("path");
+    let filename_pattern = properties.get("filename_pattern");
+
+    let app_state = AppState {
+        path: path.to_string(),
+        filename_pattern: filename_pattern.to_string()
+    };
 
     // build our application with a route
     let app = Router::new()
@@ -20,7 +31,8 @@ async fn main() {
         // `POST /users` goes to `create_user`
         .route("/users", post(create_user))
         // `GET /search` goes to `search_in_files`
-        .route("/search/:pattern", get(move |pattern| search_in_files(pattern)));
+        .route("/search/:pattern", get(search_in_files))
+        .with_state(app_state);
 
     // run our app with hyper, listening globally on port 3000
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
@@ -78,30 +90,39 @@ struct SearchResult {
     path: String
 }
 
-async fn search_in_files(pattern: String) -> (StatusCode, Json<SearchResponse>) {
-    search_pattern_at_path(Path::new("."), &pattern);
+#[derive(Clone)]
+struct AppState {
+    path: String,
+    filename_pattern: String
+}
+
+async fn search_in_files(State(state): State<AppState>, pattern: String) -> (StatusCode, Json<SearchResponse>) {
+    let list = search_pattern_at_path(Path::new(&state.path), &pattern, &state.filename_pattern);
+
+    println!("{}", list.len());
 
     (StatusCode::CREATED, Json(SearchResponse {
         pattern,
-        list: vec!()
+        list
     }))
 }
 
-fn search_pattern_at_path(path: &Path, pattern: &String) -> Vec<SearchResult> {
+fn search_pattern_at_path(path: &Path, pattern: &String, filename_pattern: &String) -> Vec<SearchResult> {
     let mut results = vec!();
-    search_in_dir(&mut results, pattern, path.to_string_lossy().to_string());
+    search_in_dir(&mut results, pattern, path.to_string_lossy().to_string(), &filename_pattern);
     results
 }
 
-fn search_in_dir(results: &mut Vec<SearchResult>, pattern: &String, current_dir: String) {
-    for entry in WalkDir::new(current_dir)
+fn search_in_dir(results: &mut Vec<SearchResult>, pattern: &String, current_dir: String, filename_pattern: &String) {
+    for entry in WalkDir::new(current_dir.clone())
         .follow_links(true)
         .into_iter()
-        .filter_map(|e| e.ok()) {
-        results.push(SearchResult{
-            path: entry.path().to_string_lossy().to_string()
-        });
+        .filter_map(|e| e.ok())
+        .filter(|e| e.file_name().to_string_lossy().ends_with(filename_pattern)) {
         let f_name = entry.file_name().to_string_lossy();
-        println!("{}", f_name);
+        println!("file {}", f_name);
+        results.push(SearchResult {
+            path: entry.path().to_string_lossy().to_string()
+        })
     }
 }
