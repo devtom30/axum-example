@@ -1,5 +1,5 @@
 [package]
-name = "package-03-search_in_files"
+name = "package-05-search_in_files"
 version = "0.1.0"
 edition = "2021"
 
