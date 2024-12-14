@@ -96,7 +96,8 @@ struct SearchResponse {
 #[derive(Serialize)]
 struct SearchResult {
     path: String,
-    href: String
+    href: String,
+    lines: Vec<String>
 }
 
 #[derive(Clone)]
@@ -137,10 +138,11 @@ fn search_in_dir(results: &mut Vec<SearchResult>, pattern: &String, current_dir:
 
         nb += 1;
         println!("{} search {} in file {}", nb, pattern, entry.path().to_string_lossy().to_string());
-        if search_in_file(&matcher, entry.path()) {
+        if let lines = search_in_file(&matcher, entry.path()) {
             results.push(SearchResult {
                 path: path,
-                href: rel_path
+                href: rel_path,
+                lines
             });
         }
     }
@@ -151,15 +153,15 @@ fn make_path_relative(start_path: &String, path_to_shorten: &String) -> String {
     path_to_shorten.chars().skip(start_path.len()).take(path_to_shorten_length - start_path.len()).collect()
 }
 
-fn search_in_file(matcher: &RegexMatcher, path: &Path) -> bool {
+fn search_in_file(matcher: &RegexMatcher, path: &Path) -> Vec<String> {
     let file = File::open(&path).expect("open file");
     let mut matches: Vec<(u64, String)> = vec![];
     Searcher::new().search_file(&matcher, &file, UTF8(|lnum, line| {
         // We are guaranteed to find a match, so the unwrap is OK.
         let mymatch = matcher.find(line.to_lowercase().as_bytes())?.unwrap();
-        matches.push((lnum, line[mymatch].to_string()));
+        matches.push((lnum, line.to_string()));
         Ok(true)
     })).expect("search_slice");
 
-    return !matches.is_empty()
+    return matches.into_iter().map(|(lnum, line)| line).collect()
 }
