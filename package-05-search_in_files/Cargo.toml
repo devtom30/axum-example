@@ -11,3 +11,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 walkdir = "2.5.0"
 app_properties = "0.1.2"
+grep-searcher = "0.1.14"
+grep-matcher = "0.1.7"
+grep-regex = "0.1.13"
+regex = "1.11.1"

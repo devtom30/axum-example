@@ -1,3 +1,4 @@
+use std::fs::File;
 use std::path::Path;
 
 use axum::{
@@ -8,7 +9,14 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use walkdir::WalkDir;
 use app_properties::AppProperties;
-use axum::extract::State;
+use axum::extract::{Path as axum_path, State};
+
+use {
+    grep_matcher::Matcher,
+    grep_regex::RegexMatcher,
+    grep_searcher::Searcher,
+    grep_searcher::sinks::UTF8,
+};
 
 #[tokio::main]
 async fn main() {
@@ -97,7 +105,7 @@ struct AppState {
     filename_pattern: String
 }
 
-async fn search_in_files(State(state): State<AppState>, pattern: String) -> (StatusCode, Json<SearchResponse>) {
+async fn search_in_files(State(state): State<AppState>, axum_path(pattern): axum_path<String>,) -> (StatusCode, Json<SearchResponse>) {
     let list = search_pattern_at_path(Path::new(&state.path), &pattern, &state.filename_pattern);
 
     println!("{}", list.len());
@@ -115,6 +123,9 @@ fn search_pattern_at_path(path: &Path, pattern: &String, filename_pattern: &Stri
 }
 
 fn search_in_dir(results: &mut Vec<SearchResult>, pattern: &String, current_dir: String, filename_pattern: &String) {
+    let matcher = RegexMatcher::new(pattern.to_lowercase().as_str()).expect("regex");
+
+    let mut nb = 0;
     for entry in WalkDir::new(current_dir.clone())
         .follow_links(true)
         .into_iter()
@@ -123,14 +134,32 @@ fn search_in_dir(results: &mut Vec<SearchResult>, pattern: &String, current_dir:
         let f_name = entry.file_name().to_string_lossy();
         let path = entry.path().to_string_lossy().to_string();
         let rel_path= make_path_relative(&current_dir, &path);
-        results.push(SearchResult {
-            path: path,
-            href: rel_path
-        })
+
+        nb += 1;
+        println!("{} search {} in file {}", nb, pattern, entry.path().to_string_lossy().to_string());
+        if search_in_file(&matcher, entry.path()) {
+            results.push(SearchResult {
+                path: path,
+                href: rel_path
+            });
+        }
     }
 }
 
 fn make_path_relative(start_path: &String, path_to_shorten: &String) -> String {
     let path_to_shorten_length = path_to_shorten.len();
     path_to_shorten.chars().skip(start_path.len()).take(path_to_shorten_length - start_path.len()).collect()
+}
+
+fn search_in_file(matcher: &RegexMatcher, path: &Path) -> bool {
+    let file = File::open(&path).expect("open file");
+    let mut matches: Vec<(u64, String)> = vec![];
+    Searcher::new().search_file(&matcher, &file, UTF8(|lnum, line| {
+        // We are guaranteed to find a match, so the unwrap is OK.
+        let mymatch = matcher.find(line.to_lowercase().as_bytes())?.unwrap();
+        matches.push((lnum, line[mymatch].to_string()));
+        Ok(true)
+    })).expect("search_slice");
+
+    return !matches.is_empty()
 }
