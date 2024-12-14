@@ -1,15 +1,16 @@
+use std::collections::HashMap;
 use std::fs::File;
 use std::path::Path;
 
+use app_properties::AppProperties;
 use axum::{
     http::StatusCode,
     Json,
     Router, routing::{get, post},
 };
+use axum::extract::{Path as axum_path, State};
 use serde::{Deserialize, Serialize};
 use walkdir::WalkDir;
-use app_properties::AppProperties;
-use axum::extract::{Path as axum_path, State};
 
 use {
     grep_matcher::Matcher,
@@ -26,10 +27,13 @@ async fn main() {
     let properties: AppProperties = AppProperties::new();
     let path = properties.get("path");
     let filename_pattern = properties.get("filename_pattern");
+    let exclusions_str = properties.get("exclusions");
+    let exclusion_map = extract_exclusions(exclusions_str);
 
     let app_state = AppState {
         path: path.to_string(),
-        filename_pattern: filename_pattern.to_string()
+        filename_pattern: filename_pattern.to_string(),
+        exclusions: exclusion_map
     };
 
     // build our application with a route
@@ -45,6 +49,17 @@ async fn main() {
     // run our app with hyper, listening globally on port 3000
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     axum::serve(listener, app).await.unwrap();
+}
+
+fn extract_exclusions(value: &str) -> HashMap<String, Vec<String>> {
+    let mut map: HashMap<String, Vec<String>> = HashMap::new();
+    let mut parts: Vec<String> = value.split(',')
+        .collect::<Vec<&str>>()
+        .into_iter()
+        .map(|str| str.to_string())
+        .collect();
+    map.insert(parts.get(0).expect("key").to_string(), parts[1..].to_vec());
+    map
 }
 
 // basic handler that responds with a static string
@@ -103,7 +118,8 @@ struct SearchResult {
 #[derive(Clone)]
 struct AppState {
     path: String,
-    filename_pattern: String
+    filename_pattern: String,
+    exclusions: HashMap<String, Vec<String>>
 }
 
 async fn search_in_files(State(state): State<AppState>, axum_path(pattern): axum_path<String>,) -> (StatusCode, Json<SearchResponse>) {
